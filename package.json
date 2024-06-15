@@ -4,7 +4,8 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "register_commands": "node src/commands/registerCommands.js"
   },
   "author": "",
   "license": "ISC",
