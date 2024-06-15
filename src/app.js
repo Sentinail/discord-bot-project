@@ -1,34 +1,67 @@
 require("dotenv").config();
-const { Client, GatewayIntentBits } = require("discord.js");
-const { default: axios } = require("axios");
+const { Client, GatewayIntentBits, InteractionType } = require("discord.js");
 const express = require("express");
-const url = require("url");
 
 const app = express();
 const port = process.env.PORT || 1500;
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMembers] });
+const client = new Client({ intents: [
+    GatewayIntentBits.Guilds, 
+    GatewayIntentBits.GuildMessages, 
+    GatewayIntentBits.DirectMessages, 
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.MessageContent
+]});
 
 client.once('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
-    sendMessages();
+    respondToMessages();
 });
 
-async function sendMessages() {
-    try {
-        const channel = await client.channels.fetch(process.env.CHANNEL_ID);
+function respondToMessages() {
+    client.on('interactionCreate', async interaction => {
+        if (interaction.type !== InteractionType.ApplicationCommand) return;
 
-        const guild = await client.guilds.fetch(process.env.GUILD_ID);
+        if (interaction.commandName === 'say_hello') {
+            try {
+                const { user } = interaction;
 
-        const members = await guild.members.fetch();
+                await user.send(`Hello to ${user.displayName}! This direct message was sent from the bot! commanded by ${user.displayName}`);
 
-        const memberUsernames = members.map(member => member.user.username);
+                interaction.reply('Hello! I have sent you a direct message!');
+            }
 
-        channel.send(`This is a test message from the bot. The members of the server are: ${memberUsernames.join(", ")}`);
+            catch (error) {
+                console.error(error);
 
-    } catch (error) {
-        console.log(error);
-    }
+                interaction.reply('There was an error while executing this command!');
+            }
+        }
+
+        else if (interaction.commandName === 'say_hello_to_all') {
+            try {
+                const { guild, user } = interaction;
+
+                guild.members.cache.forEach(async member => {
+                    if (member.user.bot) return;
+
+                    await member.send(`Hello to ${member.displayName}, This direct message was sent from the bot! commanded by ${user.displayName}`);
+                });
+
+                interaction.reply('Hello! I have sent a direct message to all members in the server!');
+            }
+
+            catch (error) {
+                console.error(error);
+
+                interaction.reply('There was an error while executing this command!');
+            }
+        }
+    });
 }
 
 client.login(process.env.DISCORD_TOKEN);
+
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
